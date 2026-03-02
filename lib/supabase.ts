@@ -20,4 +20,5 @@ export type Book = {
   published_year?: number | null;
   cover_image_url?: string | null;
   open_library_id?: string | null;
+  page_count?: number | null;
 };

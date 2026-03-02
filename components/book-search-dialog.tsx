@@ -101,6 +101,7 @@ export default function BookSearchDialog({
               published_year: book.publishedYear || null,
               cover_image_url: book.coverImageUrl || null,
               open_library_id: book.openLibraryId || null,
+              page_count: book.pageCount || null,
               created_at: dateToUse.toISOString(),
             },
           ])

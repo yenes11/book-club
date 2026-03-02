@@ -5,6 +5,7 @@ export interface OpenLibraryBook {
   first_publish_year?: number;
   cover_i?: number;
   isbn?: string[];
+  number_of_pages_median?: number;
 }
 
 export interface OpenLibrarySearchResponse {
@@ -21,6 +22,7 @@ export interface BookSearchResult {
   openLibraryId: string;
   isbn?: string;
   description?: string;
+  pageCount?: number;
 }
 
 /**
@@ -35,7 +37,7 @@ export async function searchBooks(query: string): Promise<BookSearchResult[]> {
     const response = await fetch(
       `https://openlibrary.org/search.json?q=${encodeURIComponent(
         query
-      )}&limit=10&fields=key,title,author_name,first_publish_year,cover_i,isbn`
+      )}&limit=10&fields=key,title,author_name,first_publish_year,cover_i,isbn,number_of_pages_median`
     );
 
     if (!response.ok) {
@@ -53,10 +55,53 @@ export async function searchBooks(query: string): Promise<BookSearchResult[]> {
         : undefined,
       openLibraryId: book.key.replace('/works/', ''),
       isbn: book.isbn?.[0] || undefined,
+      pageCount: book.number_of_pages_median || undefined,
     }));
   } catch (error) {
     console.error('Kitap arama hatası:', error);
     throw new Error('Kitap arama sırasında bir hata oluştu');
+  }
+}
+
+/**
+ * Open Library ID ile kitabın sayfa sayısını getir
+ */
+export async function getBookPageCount(
+  openLibraryId: string
+): Promise<number | null> {
+  try {
+    // Önce works endpoint'inden deneyelim
+    const worksResponse = await fetch(
+      `https://openlibrary.org/works/${openLibraryId}.json`
+    );
+
+    if (worksResponse.ok) {
+      const worksData = await worksResponse.json();
+      // Works'de editions varsa, ilk edition'ın sayfa sayısını al
+      if (worksData.number_of_pages) {
+        return worksData.number_of_pages;
+      }
+    }
+
+    // Editions endpoint'inden sayfa sayısını almayı dene
+    const editionsResponse = await fetch(
+      `https://openlibrary.org/works/${openLibraryId}/editions.json?limit=5`
+    );
+
+    if (editionsResponse.ok) {
+      const editionsData = await editionsResponse.json();
+      // İlk sayfa sayısı bulunan edition'ı al
+      for (const edition of editionsData.entries || []) {
+        if (edition.number_of_pages) {
+          return edition.number_of_pages;
+        }
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Sayfa sayısı getirme hatası:', error);
+    return null;
   }
 }
 

@@ -50,6 +50,19 @@ export function useBooksColumns({
         },
       },
       {
+        accessorKey: 'page_count',
+        header: () => <div className="text-center w-full">Sayfa</div>,
+        enableSorting: true,
+        cell: ({ row }) => {
+          const book = row.original;
+          return (
+            <div className="text-sm text-muted-foreground text-center w-full">
+              {book.page_count ? `${book.page_count}` : '-'}
+            </div>
+          );
+        },
+      },
+      {
         accessorKey: 'vote_count',
         header: 'Oy Sayısı',
         enableSorting: true,
