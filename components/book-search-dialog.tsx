@@ -80,12 +80,10 @@ export default function BookSearchDialog({
 
         // Hala açıklama yoksa yazar ve yıl bilgisini kullan
         const finalDescription =
-          bookDescription ||
+          bookDescription?.trim() ||
           (book.author
-            ? `${book.author}${
-                book.publishedYear ? ` (${book.publishedYear})` : ''
-              }`
-            : null);
+            ? `${book.author}${book.publishedYear ? ` (${book.publishedYear})` : ''}`
+            : 'Bu kitap için kısa bir açıklama şu an oluşturulamadı.');
 
         // Seçili ayı kullan, yoksa bugünün tarihini kullan
         const dateToUse = selectedMonth || new Date();

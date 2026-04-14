@@ -1,6 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { title, author, publishedYear } = await request.json();
@@ -38,9 +42,35 @@ Kitap: ${title}${author ? `\nYazar: ${author}` : ''}${
 
 Açıklama:`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let description = response.text().trim();
+    const maxAttempts = 2;
+    const baseDelayMs = 400;
+
+    let description = '';
+    let lastError: unknown = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        description = response.text().trim();
+
+        if (!description) {
+          throw new Error('Boş açıklama döndü');
+        }
+
+        break;
+      } catch (e) {
+        lastError = e;
+        if (attempt < maxAttempts) {
+          await sleep(baseDelayMs * 2 ** (attempt - 1));
+          continue;
+        }
+      }
+    }
+
+    if (!description) {
+      throw lastError || new Error('Açıklama oluşturulamadı');
+    }
 
     // Eğer response markdown code block içinde JSON içeriyorsa parse et
     if (description.includes('```json')) {
@@ -73,6 +103,14 @@ Açıklama:`;
       } catch (e) {
         // Parse edilemezse olduğu gibi bırak
       }
+    }
+
+    description = String(description || '').trim();
+    if (!description) {
+      return NextResponse.json(
+        { error: 'Açıklama oluşturulamadı (boş sonuç)' },
+        { status: 502 }
+      );
     }
 
     return NextResponse.json({ description });

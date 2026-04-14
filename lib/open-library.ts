@@ -25,6 +25,10 @@ export interface BookSearchResult {
   pageCount?: number;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Open Library API'den kitap arama
  */
@@ -113,28 +117,54 @@ export async function generateBookDescriptionWithAI(
   author?: string,
   publishedYear?: number
 ): Promise<string | null> {
-  try {
-    const response = await fetch('/api/generate-description', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        title,
-        author,
-        publishedYear,
-      }),
-    });
+  const maxAttempts = 3;
+  const baseDelayMs = 500;
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Açıklama oluşturulamadı');
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch('/api/generate-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          author,
+          publishedYear,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        const message =
+          (error && typeof error === 'object' && 'error' in error
+            ? (error as { error?: string }).error
+            : undefined) || `Açıklama oluşturulamadı (HTTP ${response.status})`;
+        throw new Error(message);
+      }
+
+      const data = await response.json().catch(() => null);
+      const description =
+        data && typeof data === 'object' && 'description' in data
+          ? String((data as { description?: unknown }).description || '').trim()
+          : '';
+
+      if (description) return description;
+      throw new Error('Boş açıklama döndü');
+    } catch (error) {
+      console.error(
+        `AI açıklama oluşturma hatası (deneme ${attempt}/${maxAttempts}):`,
+        error
+      );
+      if (attempt < maxAttempts) {
+        // Exponential backoff + küçük jitter
+        const jitter = Math.floor(Math.random() * 200);
+        await sleep(baseDelayMs * 2 ** (attempt - 1) + jitter);
+        continue;
+      }
+      return null;
     }
-
-    const data = await response.json();
-    return data.description || null;
-  } catch (error) {
-    console.error('AI açıklama oluşturma hatası:', error);
-    return null;
   }
+
+  return null;
 }
