@@ -3,7 +3,7 @@
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hasVoted } from '@/lib/book-votes';
-import type { Book } from '@/lib/supabase';
+import type { Book } from '@/lib/types';
 
 interface VoteBadgeProps {
   book: Book;

@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Book } from '@/lib/supabase';
+import type { Book } from '@/lib/types';
 
 interface MonthBookTableProps {
   monthLabel: string;

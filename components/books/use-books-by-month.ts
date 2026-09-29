@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { getMonthKey } from '@/lib/book-utils';
-import type { Book } from '@/lib/supabase';
+import type { Book } from '@/lib/types';
 
 interface MonthGroup {
   monthKey: string;

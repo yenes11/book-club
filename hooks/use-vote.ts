@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { changeVote } from '@/lib/actions/books';
 import { hasVoted, markAsVoted, removeVote } from '@/lib/book-votes';
-import type { Book } from '@/lib/supabase';
+import type { Book } from '@/lib/types';
 
 /**
  * Oy verme işlemlerini yöneten hook
@@ -21,16 +21,7 @@ export function useVote(
       setVotingBookId(book.id);
 
       try {
-        const newVoteCount = alreadyVoted
-          ? book.vote_count - 1
-          : book.vote_count + 1;
-
-        const { error } = await supabase
-          .from('books')
-          .update({ vote_count: newVoteCount })
-          .eq('id', book.id);
-
-        if (error) throw error;
+        const newVoteCount = await changeVote(book.id, alreadyVoted ? -1 : 1);
 
         if (alreadyVoted) {
           // Oyu geri al

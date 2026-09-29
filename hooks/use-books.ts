@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, type Book } from '@/lib/supabase';
+import type { Book } from '@/lib/types';
+import {
+  getBooks,
+  deleteBook as deleteBookAction,
+  deleteAllBooks as deleteAllBooksAction,
+  moveBooksToDate,
+} from '@/lib/actions/books';
 
 /**
  * Kitapları yükleme ve yönetme hook'u
@@ -13,25 +19,10 @@ export function useBooks() {
   const fetchBooks = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('books')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Supabase Error Details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        });
-        alert(`Veri yükleme hatası: ${error.message}`);
-        throw error;
-      }
-
-      setBooks(data || []);
+      setBooks(await getBooks());
     } catch (error) {
       console.error('Error fetching books:', error);
+      alert(`Veri yükleme hatası: ${error instanceof Error ? error.message : error}`);
     } finally {
       setLoading(false);
     }
@@ -43,8 +34,7 @@ export function useBooks() {
 
   const deleteBook = useCallback(async (id: number) => {
     try {
-      const { error } = await supabase.from('books').delete().eq('id', id);
-      if (error) throw error;
+      await deleteBookAction(id);
       setBooks((prevBooks) => prevBooks.filter((b) => b.id !== id));
     } catch (error) {
       console.error('Error deleting book:', error);
@@ -54,8 +44,7 @@ export function useBooks() {
 
   const deleteAllBooks = useCallback(async () => {
     try {
-      const { error } = await supabase.from('books').delete().neq('id', 0);
-      if (error) throw error;
+      await deleteAllBooksAction();
       setBooks([]);
     } catch (error) {
       console.error('Error deleting all books:', error);
@@ -93,12 +82,7 @@ export function useBooks() {
 
       // Her kitabın tarihini güncelle
       const bookIds = booksInMonth.map((b) => b.id);
-      const { error } = await supabase
-        .from('books')
-        .update({ created_at: nextMonth.toISOString() })
-        .in('id', bookIds);
-
-      if (error) throw error;
+      await moveBooksToDate(bookIds, nextMonth.toISOString());
 
       // Local state'i güncelle
       setBooks((prevBooks) =>

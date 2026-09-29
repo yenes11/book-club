@@ -7,10 +7,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 Create a `.env.local` file in the root directory and add the following variables:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
+DATABASE_URL=your_neon_connection_string
 GEMINI_API_KEY=your_gemini_api_key
 ```
+
+#### Database (Neon)
+
+1. Create a project at [neon.tech](https://neon.tech) and copy its connection string into `DATABASE_URL`
+2. Run `db/schema.sql` in the Neon SQL editor to create the `books` table
 
 #### Getting Gemini API Key
 

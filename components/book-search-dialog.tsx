@@ -17,7 +17,7 @@ import {
   generateBookDescriptionWithAI,
   type BookSearchResult,
 } from '@/lib/open-library';
-import { supabase } from '@/lib/supabase';
+import { addBook } from '@/lib/actions/books';
 
 interface BookSearchDialogProps {
   open: boolean;
@@ -88,25 +88,16 @@ export default function BookSearchDialog({
         // Seçili ayı kullan, yoksa bugünün tarihini kullan
         const dateToUse = selectedMonth || new Date();
 
-        const { data, error: insertError } = await supabase
-          .from('books')
-          .insert([
-            {
-              name: book.title,
-              description: finalDescription,
-              vote_count: 0,
-              author: book.author || null,
-              published_year: book.publishedYear || null,
-              cover_image_url: book.coverImageUrl || null,
-              open_library_id: book.openLibraryId || null,
-              page_count: book.pageCount || null,
-              created_at: dateToUse.toISOString(),
-            },
-          ])
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
+        await addBook({
+          name: book.title,
+          description: finalDescription,
+          author: book.author || null,
+          published_year: book.publishedYear || null,
+          cover_image_url: book.coverImageUrl || null,
+          open_library_id: book.openLibraryId || null,
+          page_count: book.pageCount || null,
+          created_at: dateToUse.toISOString(),
+        });
 
         // Başarılı ekleme sonrası
         setSearchQuery('');

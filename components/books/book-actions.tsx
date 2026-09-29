@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
-import type { Book } from '@/lib/supabase';
+import type { Book } from '@/lib/types';
 
 interface BookActionsProps {
   book: Book;

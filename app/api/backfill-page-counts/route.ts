@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+import { sql } from '@/lib/db';
 
 async function getPageCountFromOpenLibrary(openLibraryId: string): Promise<number | null> {
   try {
@@ -46,17 +41,15 @@ async function getPageCountFromOpenLibrary(openLibraryId: string): Promise<numbe
 export async function POST() {
   try {
     // page_count'u olmayan ve open_library_id'si olan kitapları bul
-    const { data: books, error: fetchError } = await supabase
-      .from('books')
-      .select('id, name, open_library_id')
-      .is('page_count', null)
-      .not('open_library_id', 'is', null);
+    const books = (await sql`
+      select id, name, open_library_id from books
+      where page_count is null and open_library_id is not null`) as {
+      id: number;
+      name: string;
+      open_library_id: string;
+    }[];
 
-    if (fetchError) {
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
-    }
-
-    if (!books || books.length === 0) {
+    if (books.length === 0) {
       return NextResponse.json({ 
         message: 'Güncellenecek kitap bulunamadı',
         updated: 0 
@@ -72,20 +65,23 @@ export async function POST() {
       const pageCount = await getPageCountFromOpenLibrary(book.open_library_id);
       
       if (pageCount) {
-        const { error: updateError } = await supabase
-          .from('books')
-          .update({ page_count: pageCount })
-          .eq('id', book.id);
+        let success = true;
+        try {
+          await sql`update books set page_count = ${pageCount} where id = ${book.id}`;
+        } catch (updateError) {
+          console.error(`Güncelleme hatası (${book.id}):`, updateError);
+          success = false;
+        }
 
         results.push({
-          id: book.id,
+          id: Number(book.id),
           name: book.name,
           pageCount,
-          success: !updateError,
+          success,
         });
       } else {
         results.push({
-          id: book.id,
+          id: Number(book.id),
           name: book.name,
           pageCount: null,
           success: false,

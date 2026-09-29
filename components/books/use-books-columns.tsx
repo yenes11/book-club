@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { VoteBadge } from './vote-badge';
 import { BookActions } from './book-actions';
-import type { Book } from '@/lib/supabase';
+import type { Book } from '@/lib/types';
 
 interface UseBooksColumnsParams {
   onVote: (book: Book) => void;
